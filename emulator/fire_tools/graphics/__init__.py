@@ -13,7 +13,7 @@ axis_fontsize=16
 title_fontsize=18
 legend_fontsize=14
 
-def plot_winds(weather, name='winds.pdf', figsize=(7, 6), cmap = 'plasma_r', meta=None, scaling=1):
+def plot_winds(weather, name='winds.pdf', figsize=(7, 6), cmap = 'plasma_r', meta=None, scaling=1, show=True):
     
     """ creates a scatter plot of wind directions (x,y) with color as the time dimension. 
     inputs are the weather variable from the dataset in the form (timesteps, 8). The 8 
@@ -52,11 +52,12 @@ def plot_winds(weather, name='winds.pdf', figsize=(7, 6), cmap = 'plasma_r', met
     
     plt.savefig(name, matadata=meta, bbox_inches='tight', meta=None)
     
-    plt.show()
+    if show:
+        plt.show()
     
 
     
-def plot_temp(weather, name='temperature.pdf', figsize=(12,6), meta=None, t_scaling=1, t_offset=0):
+def plot_temp(weather, name='temperature.pdf', figsize=(12,6), meta=None, t_scaling=1, t_offset=0, show=True):
     
     temp = weather[:, 4] # initial temperatures
     temp = np.append(temp, weather[-1, 5]) # append last temp 
@@ -85,7 +86,8 @@ def plot_temp(weather, name='temperature.pdf', figsize=(12,6), meta=None, t_scal
     
     plt.savefig(name, metadata=meta, bbox_inches='tight')
     
-    plt.show()
+    if show:
+        plt.show()
     
     
 def make_image(img, interval, shading=0.25, land_rgba=None):
@@ -378,7 +380,7 @@ def make_fire_vid(img, name='chloropleth', shading=0.25, duration=30, bg_img_arr
     
     
     
-def plot_fire(arrival, title='chloropleth', name='fire_plot.pdf', figsize=(12,9), cmap='plasma_r', iou=None, meta=None):
+def plot_fire(arrival, title='chloropleth', name='fire_plot.pdf', figsize=(12,9), cmap='plasma_r', iou=None, meta=None, show=True):
     
     max_val = np.max(arrival)
     
@@ -408,12 +410,13 @@ def plot_fire(arrival, title='chloropleth', name='fire_plot.pdf', figsize=(12,9)
     
     plt.savefig(name, metadata=meta, bbox_inches='tight') # saves an output of the plotted image
     
-    plt.show()
+    if show:
+        plt.show()
     
     return None
     
     
-def plot_fire_difference(arrival_pred, arrival_target, arrival_init=None, name='difference.pdf', figsize=(12,9), cmap='seismic', title='Predicted Minus Target', iou=None, meta=None):
+def plot_fire_difference(arrival_pred, arrival_target, arrival_init=None, name='difference.pdf', figsize=(12,9), cmap='seismic', title='Predicted Minus Target', iou=None, meta=None, show=True):
     
     """ displays the difference between two arrival images (arrival_pred - arrival_target) and draws in a 
         contour for the starting location of the fire, as defined by image arrival_init """
@@ -439,7 +442,8 @@ def plot_fire_difference(arrival_pred, arrival_target, arrival_init=None, name='
     
     plt.savefig(name, metadata=meta, bbox_inches='tight')
     
-    plt.show()
+    if show:
+        plt.show()
     
     return None
 
@@ -480,7 +484,7 @@ def create_landclass_colormap(landclass, land_colors=None):
     return cmap
     
     
-def plot_land_classes(landclass, arrival_pred=None, arrival_target=None, arrival_init=None, name='landclasses.pdf', figsize=(12,9), land_names=None, land_colors=None, title='Fire Perimeters and Landclasses', iou=None, meta=None):
+def plot_land_classes(landclass, arrival_pred=None, arrival_target=None, arrival_init=None, name='landclasses.pdf', figsize=(12,9), land_names=None, land_colors=None, title='Fire Perimeters and Landclasses', iou=None, meta=None, show=True):
     
     """ Converts landclass from a binary (height, width, channels) to a (height, width) image wih integer values for each 
         type of land. Contours are drawn for initial, predicted and final perimeters if supplied.
@@ -557,7 +561,8 @@ def plot_land_classes(landclass, arrival_pred=None, arrival_target=None, arrival
     
     plt.savefig(name, metadata=meta, bbox_inches='tight')
     
-    plt.show()
+    if show:
+        plt.show()
     
     return None
     
