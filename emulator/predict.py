@@ -27,7 +27,10 @@ if __name__ == '__main__':
     START_INTERVAL = args.START_INTERVAL
     STOP_INTERVAL = args.STOP_INTERVAL
     INDEX = args.INDEX
-    WEATHER_INPUT = eval(args.WEATHER_INPUT) # convert string into literal expression
+    if args.WEATHER_INPUT is not None:
+        WEATHER_INPUT = eval(args.WEATHER_INPUT) # convert string into literal expression
+    else:
+        WEATHER_INPUT = None
     
     # run the rest of the script
     
