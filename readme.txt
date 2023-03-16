@@ -14,6 +14,7 @@ The script can take 3 optional arguments. These are
 -si : starting interval [0, 21] : When the emulator starts making predictions of the fire path (0 default).
 -fi : stopping interval [1,22] : When the stops making predictions of the fire path (22 default).
 -idx: index of the fire sample to use [0, 170], -1 : Which fire sample to use. -1 selects a random fire (-1 default).
+-ts : weather time-series. Input as an n * 4 array, string. Inputs are wind_x (m/s), wind_y (m/s), temperature (deg C), rh ([0, 1])
 
 The file can be run as 
 
@@ -21,6 +22,11 @@ eg.
 python3 predict.py
 python3 predict.py -si 5 
 python3 predict.py -si 12 -fi 21 -idx 3
+python3 predict.py -ts "[[0, 10, 30, 0.5], [0, 20, 30, 0.5], [0, 30, 30, 0.5], [0, 40, 30, 0.5], [0, 50, 30, 0.5], [0, 60, 30, 0.5]]"
+
+# note: when using custom ts of length n the number of intervals of the emulation 1 - n
+
+
 
 Images are output into "version_1_demo/spark_emulation/emulator/images"
 

@@ -13,6 +13,7 @@ def parse_arguments():
     parser.add_argument("-si", "--START_INTERVAL", help="starting interval", type=int, default=0)
     parser.add_argument("-fi", "--STOP_INTERVAL", help="final interval", type=int, default=22)
     parser.add_argument("-idx", "--INDEX", help="sample index to use. -1 is random", type=int, default=-1)
+    parser.add_argument("-ts", "--WEATHER_INPUT", help="use custom weather inputs", type=str, default=None)
     
     args = parser.parse_args()
     
@@ -26,7 +27,7 @@ if __name__ == '__main__':
     START_INTERVAL = args.START_INTERVAL
     STOP_INTERVAL = args.STOP_INTERVAL
     INDEX = args.INDEX
-    
+    WEATHER_INPUT = eval(args.WEATHER_INPUT) # convert string into literal expression
     
     # run the rest of the script
     
@@ -149,7 +150,46 @@ if __name__ == '__main__':
     args = [INDEX, START_INTERVAL, STOP_INTERVAL] # trial index, starting interval, finishing interval
     tf_dataset = create_tf_dataset(predict_start_stop_generator, transform_trial, output_shapes = output_shapes, args=args)
     X, y = next(tf_dataset.take(1).as_numpy_iterator())
+    
+    # modify weather inputs if specified as an argument
+    #WEATHER_INPUT # n by 4. need to reshape into n-1 * 8
+    
+    if WEATHER_INPUT is not None:
+        
+        WEATHER_INPUT = np.array(WEATHER_INPUT)
+        
+        # scale the weather
+        x_wind = 60 * WEATHER_INPUT[:, 0] / master_df.loc[0, 'g_max_wind']
+        y_wind = 60 * WEATHER_INPUT[:, 1] / master_df.loc[0, 'g_max_wind']
+        
+        temp   = (WEATHER_INPUT[:, 2] - master_df.loc[0, 'g_min_temp']) / (master_df.loc[0, 'g_max_temp'] - master_df.loc[0, 'g_min_temp'])
+        rh     = (WEATHER_INPUT[:, 3] - master_df.loc[0, 'g_min_RH']) / (master_df.loc[0, 'g_max_RH'] - master_df.loc[0, 'g_min_RH'])
+        
+        x_wind = np.expand_dims(x_wind, axis=-1)
+        y_wind = np.expand_dims(y_wind, axis=-1)
+        temp   = np.expand_dims(temp, axis=-1)
+        rh     = np.expand_dims(rh, axis=-1)
+        
+        WEATHER_INPUT = np.concatenate((x_wind, y_wind, temp, rh), axis=1)
+        
+        # convert into ML pipeline format
+        
+        new_weather = np.zeros((WEATHER_INPUT.shape[0]-1, WEATHER_INPUT.shape[1]*2))
+        
+        # interleave weather at time t and t+1
+        new_weather[:, ::2] = WEATHER_INPUT[:-1, :]
+        new_weather[:, 1::2]= WEATHER_INPUT[1:, :]
+        
+        #new_weather = np.array(np.concatenate((WEATHER_INPUT[:-1, :], WEATHER_INPUT[1:, :]), axis=1))
+        new_weather = np.expand_dims(new_weather, axis=0)
+      
+        # update model input features
+        
+        X = [X[0], new_weather, X[2], X[3], X[4]]
+        
 
+
+        
     batch_size = len(y)
     # basic timing of the emulator 
     start_time = time.time()
