@@ -7,14 +7,28 @@ The remaining components allow for the (pre-trained) model to peform inference o
 
 Python libraries that are used are noted in "requirements.txt". 
 
+Keras 2.3.1
+keras-Applications 1.0.8
+Keras-Preprocessing 1.1.2
+pandas 1.0.4
+Pillow 7.1.2
+rasterio 1.1.5
+scikit-image 0.17.2
+scikit-learn 0.23.1
+scipy 1.4.1
+#Shapely 1.7.0
+#tensorboard 2.4.1
+tensorflow 2.4.1
+#tensorflow-addons 0.12.1
+
 # HOW TO RUN
 
 The script to generate predictions and associated graphics is in "version_1_demo/spark_emulation/emulator/predict.py". 
 The script can take 3 optional arguments. These are
 -si : starting interval [0, 21] : When the emulator starts making predictions of the fire path (0 default).
 -fi : stopping interval [1,22] : When the stops making predictions of the fire path (22 default).
--idx: index of the fire sample to use [0, 170], -1 : Which fire sample to use. -1 selects a random fire (-1 default).
--ts : weather time-series. Input as an n * 4 array, string. Inputs are wind_x (m/s), wind_y (m/s), temperature (deg C), rh ([0, 1])
+-idx: index of the fire sample to use [0, 169], -1 : Which fire sample to use. -1 selects a random fire (-1 default).
+-ts : weather time-series. Input as an (n * 4) array-string. Inputs are wind_x (m/s), wind_y (m/s), temperature (deg C), rh ([0, 1])
 
 The file can be run as 
 
@@ -47,7 +61,6 @@ The images are:
 
 # TO DO
 
- * Add an argument to pass in a different weather array
  * Add an argument to suppress generating simulated images for the case above 
         (since simulation would be using a different weather array and a comparison would be pointless)
  * Add an argument to generate a subset of the images 
