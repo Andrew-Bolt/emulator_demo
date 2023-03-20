@@ -254,12 +254,14 @@ if __name__ == '__main__':
     
     ## 7. CREATE AND SAVE PLOTS
 
+    im_path_prefix = 'static/images/'
+    save_type = '.jpg' # '.pdf'
 
     # windspeed plot
-    ft.graphics.plot_winds(weather, name='images/winds.pdf', meta=meta_data, scaling=w_scaling, show=False)
+    ft.graphics.plot_winds(weather, name= im_path_prefix + 'winds' + save_type, meta=meta_data, scaling=w_scaling, show=False)
 
     # temperature, rh plot
-    ft.graphics.plot_temp(weather, name='images/temperature.pdf', meta=meta_data, t_scaling=t_scaling, t_offset=t_offset, show=False)
+    ft.graphics.plot_temp(weather, name= im_path_prefix + 'temperature' + save_type, meta=meta_data, t_scaling=t_scaling, t_offset=t_offset, show=False)
 
     # crop arrival images
     a_pred = y_pred[padding:-padding, padding:-padding] # emulated
@@ -269,15 +271,15 @@ if __name__ == '__main__':
     # create plots for inital, simulated and emulated fire fronts
 
     # plot initial fire shape
-    ft.graphics.plot_fire(a_init, title='Initial Fire Shape', name='images/initial.pdf', meta=meta_data, show=False)  
+    ft.graphics.plot_fire(a_init, title='Initial Fire Shape', name= im_path_prefix + 'initial' + save_type, meta=meta_data, show=False)  
     # plot simulated fire shape
-    ft.graphics.plot_fire(a_ground, title='Simulated Fire Shape', name='images/simulated.pdf', meta=meta_data, show=False)
+    ft.graphics.plot_fire(a_ground, title='Simulated Fire Shape', name= im_path_prefix + 'simulated' + save_type, meta=meta_data, show=False)
     # plot emulated fire shape
-    ft.graphics.plot_fire(a_pred, title='Emulated Fire Shape', iou=None, name='images/emulated.pdf', meta=meta_data, show=False)
+    ft.graphics.plot_fire(a_pred, title='Emulated Fire Shape', iou=None, name= im_path_prefix + 'emulated' + save_type, meta=meta_data, show=False)
 
 
     # plot (simulated - emulated) fire fronts
-    ft.graphics.plot_fire_difference(a_pred, a_ground, a_init, name='images/difference.pdf', iou=None, meta=meta_data, show=False)
+    ft.graphics.plot_fire_difference(a_pred, a_ground, a_init, name= im_path_prefix + 'difference' + save_type, iou=None, meta=meta_data, show=False)
 
     # create a coloured landclass map
     land_colors = [[0.2,0.2,1,1], [0,0.7,0,1], [1,1,0,1], [1,0.5,0,1], [0.5,0.5,0,1], [0.7,0,0,1], [0.1,0.1,0.1,1]]
@@ -286,5 +288,5 @@ if __name__ == '__main__':
     landclass = X[4][batch_slice][padding:-padding, padding:-padding, :]
 
     # plot initial, emulated and simulated contours over a landclass map
-    ft.graphics.plot_land_classes(landclass, a_pred, a_ground, a_init, name='images/land_classes.pdf',
+    ft.graphics.plot_land_classes(landclass, a_pred, a_ground, a_init, name= im_path_prefix + 'land_classes' + save_type,
                                   land_names=land_names, land_colors=land_colors, iou=None, meta=meta_data, show=False)
