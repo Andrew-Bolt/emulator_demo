@@ -174,7 +174,7 @@ def run_model(model, si=0, fi=22, ind=-1, wthr=None):
     args = [INDEX, START_INTERVAL, STOP_INTERVAL] # trial index, starting interval, finishing interval
     tf_dataset = create_tf_dataset(predict_start_stop_generator, transform_trial, output_shapes = output_shapes, args=args)
     X, y = next(tf_dataset.take(1).as_numpy_iterator())
-    
+    determine which packages are installed in a venv
     # modify weather inputs if specified as an argument
     #WEATHER_INPUT # n by 4. need to reshape into n-1 * 8
     
