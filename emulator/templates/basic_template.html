@@ -27,6 +27,20 @@ h1,h2,h3,h4,h5,h6 {font-family:"Segoe UI",sans-serif}
     });
 </script>
 
+
+<script type=text/javascript>
+$(function generate_fire(){
+          //$('a#generate').bind('click', function() {
+            $.getJSON('/background_process',
+                function(data) {
+                // do nothing
+                });
+        return false;
+	//});
+});
+</script>
+
+
 <body>
 
 
@@ -51,6 +65,12 @@ h1,h2,h3,h4,h5,h6 {font-family:"Segoe UI",sans-serif}
 		</button>
 	</a>
 </form>
+</div>
+
+<div class='container'>
+	<button onclick="generate_fire()" class='btn btn-default'>
+		Generate2
+	</button>
 </div>
 
 
