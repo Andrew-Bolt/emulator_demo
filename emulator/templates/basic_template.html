@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+
+
+<html lang="en">
+<meta charset="UTF-8">
+<title>Page Title</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="">
+
+<style>
+html,body {font-family:"Verdana",sans-serif}
+h1,h2,h3,h4,h5,h6 {font-family:"Segoe UI",sans-serif}
+</style>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<!-- on 'Generate' press execute python function --> 
+<script type=text/javascript>
+        $(function() {
+          $('a#generate').bind('click', function() {
+            $.getJSON('/background_process',
+                function(data) {
+              //do nothing // update image?
+              //$("#emulated").attr('src', "static/images/emulated.jpg" + '?_=' + new Date().getTime());
+            });
+        return false;
+      });
+    });
+</script>
+
+<body>
+
+
+
+<h1>Fire Emulation</h1>
+<p>Fire emulation etc etc ...</p>
+
+<label for="findex"> Fire Index (0-169, -1 is random): </label>
+<input type="number" id="findex" name="findex"><br><br>
+
+<label for="start_int"> Starting Interval (0-21): </label>
+<input type="number" id="start_int" name="start_int"><br><br>
+
+<label for="start_int"> Finishing Interval (1-22): </label>
+<input type="number" id="start_int" name="start_int"><br><br>
+
+<div class='container'>
+<form>
+	<a href=# id=generate>
+		<button class='btn btn-default'>
+		Generate
+		</button>
+	</a>
+</form>
+</div>
+
+
+<img id='emulated' src="static/images/emulated.jpg" alt="Fire Chloropleth">
+<img id='winds' src="static/images/winds.jpg" alt="Winds">
+<img id='temp' src="static/images/temperature.jpg" alt="Temp and RH">
+
+</body>
+</html>

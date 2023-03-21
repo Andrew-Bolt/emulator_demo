@@ -1,0 +1,1 @@
+In this folder html templates are stored in order to be accessed by Flask.
