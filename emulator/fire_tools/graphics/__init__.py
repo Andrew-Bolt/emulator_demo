@@ -35,15 +35,18 @@ def plot_winds(weather, name='winds.pdf', figsize=(7, 6), cmap = 'plasma_r', met
     plt.figure(figsize=figsize)
     #plt.imshow(heightmap, cmap='plasma', origin='upper')
     plt.scatter(0, 0, s=50, c='g', marker='s')
-    plt.scatter(x_wind, y_wind, s=30, c=t_, cmap = cmap)
-    plt.colorbar().set_label('Interval', rotation=270)
-    
+
     if scaling==1:
+        plt.scatter(x_wind, y_wind, s=30, c=t_, cmap = cmap)
+        plt.colorbar().set_label('Interval', rotation=270)
         plt.xlim([-1, 1])
         plt.ylim([-1, 1])
         plt.grid(True, 'both')
         plt.title('Normalized Wind Direction', fontsize=title_fontsize)
     else:
+        
+        plt.scatter(x_wind, y_wind, s=30, c=t_, cmap = cmap)
+        plt.colorbar().set_label('Hours', rotation=270)
         plt.xlim([-scaling, scaling])
         plt.ylim([-scaling, scaling])
         plt.grid(True, 'both')
