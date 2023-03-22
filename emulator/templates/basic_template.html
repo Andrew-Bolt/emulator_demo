@@ -27,7 +27,7 @@ h1,h2,h3,h4,h5,h6 {font-family:"Segoe UI",sans-serif}
     });
 </script>
 
-
+<!--
 <script type=text/javascript>
 $(function generate_fire(){
           //$('a#generate').bind('click', function() {
@@ -39,6 +39,21 @@ $(function generate_fire(){
 	//});
 });
 </script>
+-->
+
+<script>
+	function generate_fire(i){
+		console.log(i);
+		}
+	document.getElementById('generate2')
+		.addEventListener("click", function(event){
+		  $.getJSON('/bacground_process',
+		     function(data){
+		      //do nothing
+		      });
+	      }
+</script>
+
 
 
 <body>
@@ -68,7 +83,7 @@ $(function generate_fire(){
 </div>
 
 <div class='container'>
-	<button onclick="generate_fire()" class='btn btn-default'>
+	<button id=generate2 class='btn btn-default'>
 		Generate2
 	</button>
 </div>

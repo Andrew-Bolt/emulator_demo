@@ -71,15 +71,16 @@ def load_trial(trial_number, dataframe, window_size=128, crop=False, transform =
     rotate = tf.random.uniform([1], minval=0, maxval=1, dtype=tf.float32) < rotate_fraction
     rotate = 0
     
+    root = os.path.dirname(os.path.dirname(os.getcwd()))
     
     # GET DATA LOCATION FOR A SAMPLE
-    folder = dataframe.loc[trial_number]['sample_name'] + '/'
-    proc_path = cwd+'/proc/'
+    #folder = dataframe.loc[trial_number]['sample_name'] + '/'
+    #proc_path = cwd+'/proc/'
     
-    at_path = dataframe.loc[trial_number]['arrival_time_proc']
+    at_path = root + dataframe.loc[trial_number]['arrival_time_proc']
     ##at_path_init = os.path.dirname(dataframe.loc[trial_number]['arrival_time_proc']) + '/start_' +                     os.path.basename(dataframe.loc[trial_number]['arrival_time_proc'])
-    hm_path = dataframe.loc[trial_number]['heightmap_proc']
-    lc_path = dataframe.loc[trial_number]['landclass_proc']
+    hm_path = root + dataframe.loc[trial_number]['heightmap_proc']
+    lc_path = root + dataframe.loc[trial_number]['landclass_proc']
     weather = dataframe.loc[trial_number, ['weather']][0]
     
     
@@ -256,13 +257,15 @@ def load_arrival(trial_number, dataframe, window_size=128, crop=False):
     # simply loads in and crops an arrival image
     # this is for training autoencoder component of the neural net
     
+    root = os.path.dirname(os.path.dirname(os.getcwd()))
+    
     # GET DATA LOCATION FOR A SAMPLE
-    folder = dataframe.loc[trial_number]['sample_name'] + '/'
-    proc_path = cwd+'/proc/'
+    #folder = dataframe.loc[trial_number]['sample_name'] + '/'
+    #proc_path = cwd+'/proc/'
     
     interval_num = dataframe.loc[trial_number]['interval_num']
     
-    at_path = dataframe.loc[trial_number]['arrival_time_proc']
+    at_path = root + dataframe.loc[trial_number]['arrival_time_proc']
     
      # extract points on fire perimeter for training
     sample_points = dataframe.loc[trial_number,'sample_points']
@@ -377,14 +380,16 @@ def load_lc(trial_number, dataframe, window_size=128, crop=False):
     # this is for training autoencoder component of the neural net
     
     # GET DATA LOCATION FOR A SAMPLE
-    folder = dataframe.loc[trial_number]['sample_name'] + '/'
-    proc_path = cwd+'/proc/'
+    #folder = dataframe.loc[trial_number]['sample_name'] + '/'
+    #proc_path = cwd+'/proc/'
+    
+    root = os.path.dirname(os.path.dirname(os.getcwd()))
     
     interval_num = dataframe.loc[trial_number]['interval_num']
     
-    at_path = dataframe.loc[trial_number]['arrival_time_proc']
-    hm_path = dataframe.loc[trial_number]['heightmap_proc']
-    lc_path = dataframe.loc[trial_number]['landclass_proc']
+    at_path = root + dataframe.loc[trial_number]['arrival_time_proc']
+    hm_path = root + dataframe.loc[trial_number]['heightmap_proc']
+    lc_path = root + dataframe.loc[trial_number]['landclass_proc']
     
      # extract points on fire perimeter for training
     sample_points = dataframe.loc[trial_number,'sample_points']
@@ -440,13 +445,15 @@ def load_start_stop_predict(trial_number, dataframe, transform=[0.0, 0.0, 0.0, 0
     # start and stop values determine the intervals over which the model predicts
     
     # GET DATA LOCATION FOR A SAMPLE
-    folder = dataframe.loc[trial_number]['sample_name'] + '/'
-    proc_path = cwd+'/proc/'
+    #folder = dataframe.loc[trial_number]['sample_name'] + '/'
+    #proc_path = cwd+'/proc/'
     
-    at_path = dataframe.loc[trial_number]['arrival_time_proc']
+    root = os.path.dirname(os.path.dirname(os.getcwd()))
+    
+    at_path = root+ dataframe.loc[trial_number]['arrival_time_proc']
     #at_path_init = os.path.dirname(dataframe.loc[trial_number]['arrival_time_proc']) + '/start_' +                     os.path.basename(dataframe.loc[trial_number]['arrival_time_proc'])
-    hm_path = dataframe.loc[trial_number]['heightmap_proc']
-    lc_path = dataframe.loc[trial_number]['landclass_proc']
+    hm_path = root+dataframe.loc[trial_number]['heightmap_proc']
+    lc_path = root+dataframe.loc[trial_number]['landclass_proc']
     weather = dataframe.loc[trial_number, ['weather']][0]
     
 
@@ -540,13 +547,15 @@ def load_predict(trial_number, dataframe, transform=[0.0, 0.0, 0.0, 0.0]):
     # transform is largely left as dummy values, so that "transform_trial" can be reused w/o modification
     
     # GET DATA LOCATION FOR A SAMPLE
-    folder = dataframe.loc[trial_number]['sample_name'] + '/'
-    proc_path = cwd+'/proc/'
+    #folder = dataframe.loc[trial_number]['sample_name'] + '/'
+    #proc_path = cwd+'/proc/'
     
-    at_path = dataframe.loc[trial_number]['arrival_time_proc']
+    root = os.path.dirname(os.path.dirname(os.getcwd()))
+    
+    at_path = root+dataframe.loc[trial_number]['arrival_time_proc']
     #at_path_init = os.path.dirname(dataframe.loc[trial_number]['arrival_time_proc']) + '/start_' +                     os.path.basename(dataframe.loc[trial_number]['arrival_time_proc'])
-    hm_path = dataframe.loc[trial_number]['heightmap_proc']
-    lc_path = dataframe.loc[trial_number]['landclass_proc']
+    hm_path = root+dataframe.loc[trial_number]['heightmap_proc']
+    lc_path = root+dataframe.loc[trial_number]['landclass_proc']
     weather = dataframe.loc[trial_number, ['weather']][0]
 
     # extract all intervals in run
@@ -630,13 +639,15 @@ def load_half(trial_number, dataframe, transform=[0.0, 0.0, 0.0, 0.0]):
     
     
     # GET DATA LOCATION FOR A SAMPLE
-    folder = dataframe.loc[trial_number]['sample_name'] + '/'
-    proc_path = cwd+'/proc/'
+    #folder = dataframe.loc[trial_number]['sample_name'] + '/'
+    #proc_path = cwd+'/proc/'
     
-    at_path = dataframe.loc[trial_number]['arrival_time_proc']
+    root = os.path.dirname(os.path.dirname(os.getcwd()))
+    
+    at_path = root+dataframe.loc[trial_number]['arrival_time_proc']
     #at_path_init = os.path.dirname(dataframe.loc[trial_number]['arrival_time_proc']) + '/start_' +                     os.path.basename(dataframe.loc[trial_number]['arrival_time_proc'])
-    hm_path = dataframe.loc[trial_number]['heightmap_proc']
-    lc_path = dataframe.loc[trial_number]['landclass_proc']
+    hm_path = root+dataframe.loc[trial_number]['heightmap_proc']
+    lc_path = root+dataframe.loc[trial_number]['landclass_proc']
     weather = dataframe.loc[trial_number, ['weather']][0]
     
     weather = weather[:, 12:] # get a few slices from weather
