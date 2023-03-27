@@ -38,6 +38,24 @@ master_df = pd.read_pickle(data_pkl)
 trials_df = pd.read_pickle(trials_pkl)
 
 
+## 2b. FLASK SETUP
+
+from flask import Flask, render_template, request, jsonify
+
+# Test implementation of Flask
+
+app = Flask(__name__, static_url_path='/static')
+
+# main html processes
+@app.route("/", methods=['GET', 'POST'])
+def render_website(): 
+    
+    
+    return render_template('basic_template.html')
+
+
+
+
 # instantiate model
 def instantiate_model():
     """
@@ -58,51 +76,81 @@ def instantiate_model():
 model = instantiate_model()
 
 
-## 2b. FLASK SETUP
+@app.route("/input_value_checks", methods=['GET', 'POST'])
+def input_value_checks():
 
-from flask import Flask, render_template, request
-
-# Test implementation of Flask
-
-app = Flask(__name__, static_url_path='/static')
-
-# main html processes
-@app.route("/", methods=['GET', 'POST'])
-def background(): 
-               
-    return render_template('basic_template.html')
-
+    ## example of data from back end to front end
+    # get time in seconds
+    if request.is_json:
+        #seconds = time.time()
+        
+        ## read in values of input fields. Try to interpret as integers
+        try:
+            sample_num = int(request.args.get('sample_num'))
+        except:
+            sample_num = None
+        try:
+            start_int = int(request.args.get('start_int'))
+        except:
+            start_int = None
+        try:
+            finish_int = int(request.args.get('finish_int'))
+        except:
+            finish_int = None
+        
+        
+        # default input values
+        d_sample_num = -1
+        d_start_int = 0
+        d_finish_int = 22
+        
+        
+        
+        if sample_num not in range(-1, 170):
+            sample_num = d_sample_num
+        if start_int not in range(0, 22):
+            start_int = d_start_int
+        if finish_int not in range(1, 23):
+            finish_int = d_finish_int
+        
+        if finish_int <= start_int:
+            start_int = finish_int-1
+        
+        
+        return jsonify({#'seconds': seconds,
+                        'sample_num':sample_num,
+                        'start_int':start_int,
+                        'finish_int':finish_int
+                        })
+    return "Nothing"
 
 # processes to execute without page refresh
-@app.route('/background_process')
-def background_process(si=0, fi=22, ind=-1, wthr=None):
-       
-    # load in the model
-    #model = instantiate_model()
-
-    # get new predictions
-    run_model(model, si, fi, ind, wthr)
-    
-    
-    return "Nothing" # dummy output
-    
-    
-    
-def run_model(model, si=0, fi=22, ind=-1, wthr=None):
+@app.route('/run_model')
+def run_model(wthr=None):
     """
     runs the model and produces figures
     """
     
-    START_INTERVAL = si
-    STOP_INTERVAL = fi
-    INDEX = ind
+    RANDOM_CHECKBOX = request.args.get('checkbox')
+    START_INTERVAL = int(request.args.get('start_int'))
+    STOP_INTERVAL = int(request.args.get('finish_int'))
+    INDEX = int(request.args.get('sample_num'))
+    
+    if RANDOM_CHECKBOX == 'true':
+        INDEX = -1
+    
     if wthr is not None:
         WEATHER_INPUT = eval(wthr) # convert string into literal expression
     else:
         WEATHER_INPUT = None
     
-    ######
+    if INDEX == -1:
+        predict_indices = master_df.index
+        index = np.random.choice(predict_indices) # get a random index
+    else:
+        index = INDEX
     
+    ######
     
         ## 3. CREATE TensorFlow Dataset OBJECT
     
@@ -117,26 +165,9 @@ def run_model(model, si=0, fi=22, ind=-1, wthr=None):
 
     def predict_start_stop_generator(index=-1, start=START_INTERVAL, stop=STOP_INTERVAL):
 
-        if index==-1: #randomize
+        features, target = load_start_stop_predict(index, master_df, transform = [0.0, 0.0, 0.0, 0.0], start=start, stop=stop)
 
-            # randomly order the trials to process each epoch
-            predict_indices = master_df.index # search over all validation entries
-            #predict_indices = trials_df[trials_df.train_or_test == 'test'].index
-
-            #indices = predict_indices
-            indices = np.random.choice(predict_indices, len(predict_indices), replace=False)
-
-            for ind in indices:
-
-                features, target = load_start_stop_predict(ind, master_df, transform = [0.0, 0.0, 0.0, 0.0], start=start, stop=stop)
-
-                yield features, target
-
-        else: # use specified index
-
-            features, target = load_start_stop_predict(index, master_df, transform = [0.0, 0.0, 0.0, 0.0], start=start, stop=stop)
-
-            yield features, target
+        yield features, target
 
 
     output_types   = ((tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32), tf.float32)
@@ -171,7 +202,14 @@ def run_model(model, si=0, fi=22, ind=-1, wthr=None):
     padding = 1 # minimum padding value
 
     # pass arguments to TensorFlow Dataset Object
-    args = [INDEX, START_INTERVAL, STOP_INTERVAL] # trial index, starting interval, finishing interval
+    print('trial number:' + str(index))
+    print('start interval: ' + str(START_INTERVAL))
+    print('finish interval: ' + str(STOP_INTERVAL))
+    args = [index, START_INTERVAL, STOP_INTERVAL] # trial index, starting interval, finishing interval
+    
+
+    
+    
     tf_dataset = create_tf_dataset(predict_start_stop_generator, transform_trial, output_shapes = output_shapes, args=args)
     X, y = next(tf_dataset.take(1).as_numpy_iterator())
 
@@ -311,6 +349,39 @@ def run_model(model, si=0, fi=22, ind=-1, wthr=None):
     # plot initial, emulated and simulated contours over a landclass map
     ft.graphics.plot_land_classes(landclass, a_pred, a_ground, a_init, name= im_path_prefix + 'land_classes' + save_type,
                                   land_names=land_names, land_colors=land_colors, iou=None, meta=meta_data, show=False)
+
+    
+    
+    if WEATHER_INPUT is None:
+        new_weather = np.concatenate((weather[:, ::2], np.expand_dims(weather[-1, 1::2], axis=0)), axis=0)
+    else: 
+        new_weather = WEATHER_INPUT
+        
+    WX   = new_weather[:, 0]
+    WY   = new_weather[:, 1]
+    WS   = np.sqrt(WX ** 2 + WY ** 2) * w_scaling
+    WD   = 180 - np.degrees(np.arctan2(WY, WX)) # yes, Y before X
+        
+    TEMP = new_weather[:, 2] * t_scaling + t_offset
+    RH   = new_weather[:, 3]
+    
+    weather_df = np.concatenate((np.expand_dims(WS, 0),
+                                 np.expand_dims(WD, 0),
+                                 np.expand_dims(TEMP, 0),
+                                 np.expand_dims(RH, 0)),
+                                 axis=0)
+    weather_df = pd.DataFrame(np.transpose(weather_df), columns=['WS', 'WD', 'TEMP', 'RH']) 
+    weather_json = weather_df.transpose().to_json()
+    print(weather_json)
+    #weather_json = {'TEMP': {'1': 9}}
+        
+    return jsonify({'weather' : weather_json,
+                    'sample_num': index # allows update of index if -1 was passed
+                   })    
+        
+    # end of "run_model"
+    #return "Nothing" # dummy output
+
 
 
 # allow the process to be executed as a python script

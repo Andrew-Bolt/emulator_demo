@@ -13,47 +13,131 @@ h1,h2,h3,h4,h5,h6 {font-family:"Segoe UI",sans-serif}
 </style>
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<!-- on 'Generate' press execute python function --> 
-<script type=text/javascript>
-        $(function() {
-          $('a#generate').bind('click', function() {
-            $.getJSON('/background_process',
-                function(data) {
-              //do nothing // update image?
-              //$("#emulated").attr('src', "static/images/emulated.jpg" + '?_=' + new Date().getTime());
-            });
-        return false;
-      });
-    });
-</script>
-
-<!--
-<script type=text/javascript>
-$(function generate_fire(){
-          //$('a#generate').bind('click', function() {
-            $.getJSON('/background_process',
-                function(data) {
-                // do nothing
-                });
-        return false;
-	//});
-});
-</script>
--->
 
 <script>
-	function generate_fire(i){
-		console.log(i);
-		}
-	document.getElementById('generate2')
-		.addEventListener("click", function(event){
-		  $.getJSON('/bacground_process',
-		     function(data){
-		      //do nothing
-		      });
-	      }
-</script>
+// set some default values for the input fields
+//document.getElementById('findex').value = '-1';
+//document.getElementById('start_int').value = '0';
+//document.getElementById('finish_int').value = '22';
 
+var sample_num = "-1";
+var start_int = "0";
+var finish_int = "22";
+
+var dummies = [{
+		'interval':'1',
+		'ws' : '40',
+		'wd' : '0',
+		'temp': '35',
+		'rh': 0.25
+		}];
+var weather_json
+
+// Disable index input if random is checked
+function rand_cond_check(){
+
+	var random_checkbox = document.getElementById("random_check");
+	//var random_textbox  = document.getElementById("text");
+	
+	if (random_checkbox.checked==true){
+		sample_num = document.getElementById('findex').value;
+		document.getElementById('findex').disabled = true;
+		
+	//	text.style.display = "block";
+	} else {
+		document.getElementById('findex').disabled = false;
+	//	text.style.display = "none";
+	}
+}
+
+
+
+$(document).ready(function(){
+	//default values
+	document.getElementById('findex').value = sample_num
+	document.getElementById('start_int').value = start_int
+	document.getElementById('finish_int').value = finish_int
+	
+	// table update test
+	//$('<tr>').html("<th>Hour</th>"
+	//	     	        + "<th>Wind Speed (m/s)</th>"
+	//		        + "<th>Wind Dir. (deg N)</th>"
+	//		        + "<th>Temp (deg C)</th>"
+	//		        + "<th>R Humidity</th>").appendTo('#weather_table');
+	
+	// GENERATE A NEW SET OF DATA
+	$('.btn').click(function(){
+		$.ajax({
+		  	url: "/input_value_checks", //send url to root address
+		  	type: 'get', // get or read server info
+		  	contentType: 'application/json',
+		  	data: {
+		  	    //button_text: $(this).text(), // get text from the button element
+		  	    sample_num: document.getElementById('findex').value,
+		  	    start_int: document.getElementById('start_int').value,
+		  	    finish_int: document.getElementById('finish_int').value
+		  	},
+		  	success: function(response){ //on success take the server response as an argument
+		  	    // update text with response 
+		  	    //$('.btn').text(response.seconds),
+		  	    document.getElementById('findex').value = response.sample_num,
+		  	    sample_num = response.sample_num,
+		  	    document.getElementById('start_int').value = response.start_int,
+		  	    start_int = response.start_int,
+		  	    document.getElementById('finish_int').value = response.finish_int,
+		  	    finish_int = response.finish_int
+		  	    // on completing input_value_checks, call run_model
+		  	    
+    			    $.ajax({
+				url: "/run_model",
+				type: 'get',
+				contentType: 'application/json',
+				data: {
+				    checkbox: document.getElementById("random_check").checked,
+			  	    sample_num: sample_num,
+			  	    start_int: start_int,
+			  	    finish_int: finish_int
+			  	},
+			  	success: function(response){
+			  	//update trial index
+			  	document.getElementById('findex').value = response.sample_num,
+		  	        sample_num = response.sample_num,
+			  	
+			  	//update weather table
+				weather_json = JSON.parse(response.weather),
+	
+
+			  	// Update Table of Weather values for thi srun
+			  	//$("#weather_table tbody tr").remove() // erase non-headers
+			  	document.getElementById('weather_table').innerHTML = "<th>Interval</th>"
+		     	        + "<th>Wind Speed (m/s)</th>"
+			        + "<th>Wind Dir. (deg N)</th>"
+			        + "<th>Temp (deg C)</th>"
+			        + "<th>R Humidity</th>"
+			  	
+		  		$.each(weather_json, function(i, item) {
+			    		$('<tr>').html(
+						"<td>" + i
+						+ "</td><td>" + weather_json[i].WS
+						+ "</td><td>" + weather_json[i].WD
+			       		+ "</td><td>" + weather_json[i].TEMP
+			       		+ "</td><td>" + weather_json[i].RH
+						+ "</td>").appendTo('#weather_table');
+					});
+			  	
+			  	
+			  	}   
+			})
+			// update images asynchronously below?
+			
+			}
+		})
+  })
+})
+
+
+
+</script>
 
 
 <body>
@@ -61,37 +145,49 @@ $(function generate_fire(){
 
 
 <h1>Fire Emulation</h1>
-<p>Fire emulation etc etc ...</p>
+<p id="abstract">Fire emulation etc etc ...</p>
 
-<label for="findex"> Fire Index (0-169, -1 is random): </label>
-<input type="number" id="findex" name="findex"><br><br>
+<label for="findex"> Fire Index (0-169): </label>
+<input type="number" id="findex" name="findex">
+
+<!--
+<p id="text" style="display:none">Checkbox is CHECKED!</p>
+-->
+
+<input type='checkbox' id="random_check" name="random_check" onclick="rand_cond_check()">
+<label for "random_check"> Random input </label><br><br>
 
 <label for="start_int"> Starting Interval (0-21): </label>
 <input type="number" id="start_int" name="start_int"><br><br>
 
-<label for="start_int"> Finishing Interval (1-22): </label>
-<input type="number" id="start_int" name="start_int"><br><br>
+<label for="finish_int"> Finishing Interval (1-22): </label>
+<input type="number" id="finish_int" name="finish_int"><br><br>
+
+
+<table id="weather_table" border=1>
+      <tr>
+        <th>Interval</th>
+        <th>Wind Speed (m/s)</th>
+        <th>Wind Dir. (deg N)</th>
+        <th>Temp (deg C)</th>
+        <th>R Humidity</th>
+      </tr>
+</table>
+
+
 
 <div class='container'>
-<form>
-	<a href=# id=generate>
-		<button class='btn btn-default'>
-		Generate
+		<button class='btn btn-default' id='generate'>
+		Predict Fire
 		</button>
-	</a>
-</form>
 </div>
 
-<div class='container'>
-	<button id=generate2 class='btn btn-default'>
-		Generate2
-	</button>
-</div>
+<p id="text"> output weather table</p>
 
 
-<img id='emulated' src="static/images/emulated.jpg" alt="Fire Chloropleth">
-<img id='winds' src="static/images/winds.jpg" alt="Winds">
-<img id='temp' src="static/images/temperature.jpg" alt="Temp and RH">
+<img id='image_emulated' src="static/images/emulated.jpg" alt="Fire Chloropleth">
+<img id='image_winds' src="static/images/winds.jpg" alt="Winds">
+<img id='image_temp' src="static/images/temperature.jpg" alt="Temp and RH">
 
 </body>
 </html>

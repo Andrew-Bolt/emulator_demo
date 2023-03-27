@@ -1,4 +1,6 @@
 # ignore image outputs # 
 ########################
 *.pdf
+*.jpg
+*.jpeg
 
