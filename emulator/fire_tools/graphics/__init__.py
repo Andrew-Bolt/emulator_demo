@@ -9,6 +9,17 @@ import cv2
 from skimage import measure
 from skimage.draw import polygon_perimeter
 
+import base64
+from io import BytesIO
+from matplotlib.figure import Figure
+from flask import Response
+from matplotlib.backends.backend_agg import FigureCanvasAgg 
+from matplotlib.backends.backend_svg import FigureCanvasSVG
+from flask import render_template
+
+
+
+
 axis_fontsize=16
 title_fontsize=18
 legend_fontsize=14
@@ -417,7 +428,57 @@ def plot_fire(arrival, title='chloropleth', name='fire_plot.pdf', figsize=(12,9)
         plt.show()
     
     return None
+
+def plot_fire_embed(arrival, title='chloropleth', name='fire_plot.pdf', figsize=(12,9), cmap='plasma_r', iou=None, meta=None, show=True):
     
+    max_val = np.max(arrival)
+    
+    arrival = max_val-arrival # invert arrival values to recover chronological order
+    
+    # set colormap levels
+    levels = np.arange(0, max_val, max_val/100) # 100 colors
+    #levels[-1] = 1-0.001 # minimum colormap value
+    
+    # create colormap palette
+    palette = copy(plt.get_cmap(cmap))
+    #palette.set_under('white', '1.0') # set opaque white for unburnt
+    palette.set_over('white', '1.0') 
+    
+    norm = colors.BoundaryNorm(levels, ncolors=palette.N)
+    
+    #fig = Figure()
+    #ax = fig.subplots()
+    #ax.plot([1,1])
+
+    fig = Figure(figsize=figsize)
+    ax = fig.add_subplot(1,1,1)
+    
+    
+    # plot figure
+    ax.imshow(arrival, norm=norm, cmap=palette, origin='upper') #vmax=1
+    plt.colorbar(cax=ax, ticks=np.arange(0, max_val, 2))    
+    ax.set_title(title, fontsize=title_fontsize) ## np.where(y_init>0.001, 1, 0)
+    #plt.set_zlim([0, max_val])
+    
+    if iou is not None:
+        # add text to display the IOU of the fire    
+        ax.set_xlabel('IOU: {:.2f}'.format(iou), fontsize=axis_fontsize)
+    
+    # save to temp buffer
+    output = BytesIO()
+    FigureCanvasSVG(fig).print_svg(output)
+    
+    # encode PNG 
+    #pngImageB64String = "data:image/png;base64,"
+    #pngImageB64String += base64.b64encode(pngImage.getvalue()).decode('utf8')
+    
+    # return embedded image
+    #return render_template("image.html", image=pngImageB64String)
+    
+    return Response(output.getvalue(), mimetype='image/svg+xml')
+  
+
+
     
 def plot_fire_difference(arrival_pred, arrival_target, arrival_init=None, name='difference.pdf', figsize=(12,9), cmap='seismic', title='Predicted Minus Target', iou=None, meta=None, show=True):
     

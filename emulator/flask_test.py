@@ -20,6 +20,8 @@ import matplotlib.colors as colors
 import rasterio
 import matplotlib.pyplot as plt
 
+from flask import Response
+
 ## 2. SET FILEPATHS, LOAD DATAFRAMES
 
 # file paths
@@ -97,17 +99,17 @@ def input_value_checks():
             finish_int = int(request.args.get('finish_int'))
         except:
             finish_int = None
-        
+                   
         
         # default input values
-        d_sample_num = -1
+        d_sample_num = random.randint(0, 169)
         d_start_int = 0
         d_finish_int = 22
         
-        
-        
-        if sample_num not in range(-1, 170):
+
+        if sample_num not in range(0, 170):
             sample_num = d_sample_num
+            
         if start_int not in range(0, 22):
             start_int = d_start_int
         if finish_int not in range(1, 23):
@@ -124,25 +126,43 @@ def input_value_checks():
                         })
     return "Nothing"
 
+def make_array(string_input):
+    
+    x = np.array(eval('[' + str(string_input) + ']'))
+    
+    return x
+
 # processes to execute without page refresh
 @app.route('/run_model')
 def run_model(wthr=None):
     """
     runs the model and produces figures
     """
+    WEATHER = None
     
-    RANDOM_CHECKBOX = request.args.get('checkbox')
+    r = int(request.args.get('r'))
     START_INTERVAL = int(request.args.get('start_int'))
     STOP_INTERVAL = int(request.args.get('finish_int'))
     INDEX = int(request.args.get('sample_num'))
     
-    if RANDOM_CHECKBOX == 'true':
-        INDEX = -1
+    WEATHER = None
+    if r == 1:
+        try:
+            ws = make_array(request.args.get('ws'))
+            wd = make_array(request.args.get('wd'))
+            tp = make_array(request.args.get('tp'))
+            rh = make_array(request.args.get('rh'))
+
+            WEATHER = np.array([[ws, wd, tp, rh]])
+        except: 
+            WEATHER = None
+
+        
+    #print(WEATHER)
     
-    if wthr is not None:
-        WEATHER_INPUT = eval(wthr) # convert string into literal expression
-    else:
-        WEATHER_INPUT = None
+
+    #if RANDOM_CHECKBOX == 'true':
+    #    INDEX = -1
     
     if INDEX == -1:
         predict_indices = master_df.index
@@ -199,12 +219,13 @@ def run_model(wthr=None):
     
     #### 5b. SETUP
     
-    padding = 1 # minimum padding value
+    PADDING = 32 # minimum padding value
 
     # pass arguments to TensorFlow Dataset Object
+    #print('weather TS: ' + str(WEATHER))
     print('trial number:' + str(index))
-    print('start interval: ' + str(START_INTERVAL))
-    print('finish interval: ' + str(STOP_INTERVAL))
+    #print('start interval: ' + str(START_INTERVAL))
+    #print('finish interval: ' + str(STOP_INTERVAL))
     args = [index, START_INTERVAL, STOP_INTERVAL] # trial index, starting interval, finishing interval
     
 
@@ -215,17 +236,29 @@ def run_model(wthr=None):
 
     # modify weather inputs if specified as an argument
     #WEATHER_INPUT # n by 4. need to reshape into n-1 * 8
+    WEATHER_INPUT = None
     
-    if WEATHER_INPUT is not None:
-        
-        WEATHER_INPUT = np.array(WEATHER_INPUT)
-        
+    
+    if WEATHER is not None:
+        #print('using custom weather...')
+        WEATHER_INPUT = WEATHER
+        WEATHER_INPUT = np.squeeze(WEATHER_INPUT, axis=0)
+        WEATHER_INPUT = np.swapaxes(WEATHER_INPUT, 0, 1)
+       
         # scale the weather
-        x_wind = 60 * WEATHER_INPUT[:, 0] / master_df.loc[0, 'g_max_wind']
-        y_wind = 60 * WEATHER_INPUT[:, 1] / master_df.loc[0, 'g_max_wind']
+        #print(WEATHER_INPUT)
+        
+        x_vec = WEATHER_INPUT[:, 0] * np.cos((90 - WEATHER_INPUT[:, 1]) * np.pi / 180)
+        y_vec = WEATHER_INPUT[:, 0] * np.sin((90 - WEATHER_INPUT[:, 1]) * np.pi / 180)
+        
+        # scale wind factors
+        
+        x_wind = 60 * x_vec / master_df.loc[0, 'g_max_wind']
+        y_wind = 60 * y_vec / master_df.loc[0, 'g_max_wind']
         
         temp   = (WEATHER_INPUT[:, 2] - master_df.loc[0, 'g_min_temp']) / (master_df.loc[0, 'g_max_temp'] - master_df.loc[0, 'g_min_temp'])
-        rh     = (WEATHER_INPUT[:, 3] - master_df.loc[0, 'g_min_RH']) / (master_df.loc[0, 'g_max_RH'] - master_df.loc[0, 'g_min_RH'])
+        #rh     = (WEATHER_INPUT[:, 3]/100 - master_df.loc[0, 'g_min_RH']) / (master_df.loc[0, 'g_max_RH'] - master_df.loc[0, 'g_min_RH'])
+        rh     = WEATHER_INPUT[:, 3]/100
         
         x_wind = np.expand_dims(x_wind, axis=-1)
         y_wind = np.expand_dims(y_wind, axis=-1)
@@ -233,6 +266,8 @@ def run_model(wthr=None):
         rh     = np.expand_dims(rh, axis=-1)
         
         WEATHER_INPUT = np.concatenate((x_wind, y_wind, temp, rh), axis=1)
+        
+        print(WEATHER_INPUT)
         
         # convert into ML pipeline format
         
@@ -255,7 +290,7 @@ def run_model(wthr=None):
     batch_size = len(y)
     # basic timing of the emulator 
     start_time = time.time()
-    y_pred_out = model.predict((X))
+    y_pred_out = model.predict((X), verbose=False)
     end_time = time.time()
     run_time = end_time - start_time
     print('emulator run time: ' + str(run_time))
@@ -323,9 +358,9 @@ def run_model(wthr=None):
     ft.graphics.plot_temp(weather, name= im_path_prefix + 'temperature' + save_type, meta=meta_data, t_scaling=t_scaling, t_offset=t_offset, show=False)
 
     # crop arrival images
-    a_pred = y_pred[padding:-padding, padding:-padding] # emulated
-    a_init = y_init[padding:-padding, padding:-padding] # initial 
-    a_ground = y_ground[padding:-padding, padding:-padding] # simulated
+    a_pred = y_pred[PADDING:-PADDING, PADDING:-PADDING] # emulated
+    a_init = y_init[PADDING:-PADDING, PADDING:-PADDING] # initial 
+    a_ground = y_ground[PADDING:-PADDING, PADDING:-PADDING] # simulated
 
     # create plots for inital, simulated and emulated fire fronts
 
@@ -333,8 +368,12 @@ def run_model(wthr=None):
     ft.graphics.plot_fire(a_init, title='Initial Fire Shape', name= im_path_prefix + 'initial' + save_type, meta=meta_data, show=False)  
     # plot simulated fire shape
     ft.graphics.plot_fire(a_ground, title='Simulated Fire Shape', name= im_path_prefix + 'simulated' + save_type, meta=meta_data, show=False)
-    # plot emulated fire shape
+    
     ft.graphics.plot_fire(a_pred, title='Emulated Fire Shape', iou=None, name= im_path_prefix + 'emulated' + save_type, meta=meta_data, show=False)
+    
+    # attempting to stream test image
+    # plot emulated fire shape
+    emulated_plot = ft.graphics.plot_fire_embed(a_pred, title='Emulated Fire Shape', iou=None, name= im_path_prefix + 'emulated' + save_type, meta=meta_data, show=False)
 
 
     # plot (simulated - emulated) fire fronts
@@ -344,14 +383,13 @@ def run_model(wthr=None):
     land_colors = [[0.2,0.2,1,1], [0,0.7,0,1], [1,1,0,1], [1,0.5,0,1], [0.5,0.5,0,1], [0.7,0,0,1], [0.1,0.1,0.1,1]]
     land_colors = [[0,0,1,1], [0,0.8,0,1], [1,1,0.1,1], [1,0.5,0,1], [0.5,0.5,0,1], [1,0.1,0.2,1], [1,1,1,1]]
     land_names = ['water/unburnable','stringbark forrest','grazed grassland','mallee heath','spinifex grassland','heathland', 'pine plantation']
-    landclass = X[4][batch_slice][padding:-padding, padding:-padding, :]
+    landclass = X[4][batch_slice][PADDING:-PADDING, PADDING:-PADDING, :]
 
     # plot initial, emulated and simulated contours over a landclass map
     ft.graphics.plot_land_classes(landclass, a_pred, a_ground, a_init, name= im_path_prefix + 'land_classes' + save_type,
                                   land_names=land_names, land_colors=land_colors, iou=None, meta=meta_data, show=False)
 
-    
-    
+        
     if WEATHER_INPUT is None:
         new_weather = np.concatenate((weather[:, ::2], np.expand_dims(weather[-1, 1::2], axis=0)), axis=0)
     else: 
@@ -360,28 +398,44 @@ def run_model(wthr=None):
     WX   = new_weather[:, 0]
     WY   = new_weather[:, 1]
     WS   = np.sqrt(WX ** 2 + WY ** 2) * w_scaling
-    WD   = 180 - np.degrees(np.arctan2(WY, WX)) # yes, Y before X
+    WD   = 90 - np.degrees(np.arctan2(WY, WX)) # yes, Y before X
         
     TEMP = new_weather[:, 2] * t_scaling + t_offset
-    RH   = new_weather[:, 3]
+    RH   = new_weather[:, 3] * 100 # make a percentage
+    
+    # perform rounding
+    #WS = np.round(WS, 1)
+    #WD = np.round(WD, 0)
+    #TEMP = np.round(TEMP, 1)
+    #RH = np.round(RH, 1)
+    
     
     weather_df = np.concatenate((np.expand_dims(WS, 0),
                                  np.expand_dims(WD, 0),
                                  np.expand_dims(TEMP, 0),
                                  np.expand_dims(RH, 0)),
                                  axis=0)
+    
     weather_df = pd.DataFrame(np.transpose(weather_df), columns=['WS', 'WD', 'TEMP', 'RH']) 
+    
+    
+    # convert pandas df to json
     weather_json = weather_df.transpose().to_json()
-    print(weather_json)
-    #weather_json = {'TEMP': {'1': 9}}
+    
+    
+    #print(weather_json)
+    print('finished')
         
     return jsonify({'weather' : weather_json,
-                    'sample_num': index # allows update of index if -1 was passed
+                    #'sample_num': index # allows update of index if -1 was passed
+                    'emulated_plot' : 5,#emulated_plot streamed - currently not working
+                    'iou' : iou_val
                    })    
         
     # end of "run_model"
     #return "Nothing" # dummy output
 
+    
 
 
 # allow the process to be executed as a python script

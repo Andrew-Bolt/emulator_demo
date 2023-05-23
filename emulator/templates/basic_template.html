@@ -24,24 +24,57 @@ var sample_num = "-1";
 var start_int = "0";
 var finish_int = "22";
 
-var dummies = [{
-		'interval':'1',
-		'ws' : '40',
-		'wd' : '0',
-		'temp': '35',
-		'rh': 0.25
-		}];
+var pmi = 1;
+var ws_default = 20;
+var wd_default = 0;
+var tp_default = 30;
+var rh_default = 25;
+
 var weather_json
 
+//custom weather check
+//function custom_weather_check(){
+//	custom_weather document.getElementById("set_weather").checked;
+//}
+
+// update / refresh images
+function update_images(emulated_plot){
+
+	// update images by forcing a reload
+	// using ?.random() as a query forces an image reload, rather than using
+	// a chached image of the same name/
+	// Hopefully this process can be cleaned up by instead streaming raw image 
+	// data from flask, rather than saving a physical image, then loading it in
+	obj1 = document.getElementById('image_emulated');
+	obj1.src = obj1.src + "?" + Math.random();
+	obj2 = document.getElementById('image_winds');
+	obj2.src = obj2.src + "?" + Math.random();
+	obj3 = document.getElementById('image_temp');
+	obj3.src = obj3.src + "?" + Math.random();
+	obj4 = document.getElementById('image_contours');
+	obj4.src = obj4.src + "?" + Math.random();
+}
+
+// get a random integer from interval
+function randomIntFromInterval(min, max) { // min and max included 
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
 // Disable index input if random is checked
-function rand_cond_check(){
+function rand_cond_check(new_num=false){
 
 	var random_checkbox = document.getElementById("random_check");
 	//var random_textbox  = document.getElementById("text");
 	
 	if (random_checkbox.checked==true){
-		sample_num = document.getElementById('findex').value;
+		if (new_num==true){
+			sample_num = randomIntFromInterval(0, 169);
+			//sample_num = document.getElementById('findex').value;
+			document.getElementById('findex').value = sample_num;
+		}
 		document.getElementById('findex').disabled = true;
+		document.getElementById('set_weather').disabled = true;
+		document.getElementById('set_weather').checked = false;
 		
 	//	text.style.display = "block";
 	} else {
@@ -50,89 +83,324 @@ function rand_cond_check(){
 	}
 }
 
+// Disable start and end interval inputs if set_weather is collected
+function set_weather_timeseries(){
+
+	var random_checkbox = document.getElementById('set_weather');
+
+	// freeze the index field and randomize fields
+	if (random_checkbox.checked==true){
+		document.getElementById('findex').disabled = true;
+		document.getElementById('random_check').disabled = true;
+		document.getElementById('random_check').checked = false;
+		document.getElementById('plus').disabled = true;
+		document.getElementById('minus').disabled = true;
+	} else {
+		document.getElementById('findex').disabled = false;
+		document.getElementById('random_check').disabled = false;
+		document.getElementById('plus').disabled = false;
+		document.getElementById('minus').disabled = false;
+	}
+
+	// convert the static weather table into a dynamic table with input fields
+	if (random_checkbox.checked==true){
+		document.getElementById('finish_int').disabled = true;
+		document.getElementById('start_int').disabled = true;
+		
+		document.getElementById('weather_table_output').hidden = true;
+		
+		document.getElementById('weather_table_input').hidden = false;
+		document.getElementById('plus').hidden = false;
+		document.getElementById('minus').hidden = false;
+		document.getElementById('pm_value').hidden = false;
+	} else {
+		document.getElementById('finish_int').disabled = false;
+		document.getElementById('start_int').disabled = false;
+		
+		document.getElementById('weather_table_output').hidden = false;
+		
+		document.getElementById('weather_table_input').hidden = true;
+		document.getElementById('plus').hidden = true;
+		document.getElementById('minus').hidden = true;
+		document.getElementById('pm_value').hidden = true;
+	}
+}
+
+function click_plus(pm){
+	
+	// minimum of 2 rows
+	if (pmi > 1 && pm==-1){
+		pmi = pmi + pm;
+		remove_row(pmi+2); // runction to remove table row
+	}
+	
+	// maximum of 23 rows
+	if (pmi < 23 && pm==1){
+		pmi = pmi + pm;
+		add_row(pmi+1);
+		//add_row(pmi+1); // function to add table row
+	}
+	
+	// update pmi text value
+	document.getElementById('pm_value').value = pmi;
+}
+
+function remove_row(i){
+	// remove a row from a table
+	document.getElementById('weather_table_input').deleteRow(i);	
+}
+
+
+function add_row(i){
+	// get values from previous row
+	var table_input = document.getElementById('weather_table_input');
+	
+	// get values from previous row 
+	var rowAbove = table_input.rows[i-1].cells
+	var wsValue = rowAbove[1].children[0].value;
+	var wdValue = rowAbove[2].children[0].value;
+	var tpValue = rowAbove[3].children[0].value;
+	var rhValue = rowAbove[4].children[0].value;
+	
+	// insert new row
+	var rowAdd = table_input.insertRow(i);
+		
+	//populate table values
+	var idCell = rowAdd.insertCell(0);
+	var wsCell = rowAdd.insertCell(1);
+	var wdCell = rowAdd.insertCell(2);
+	var tpCell = rowAdd.insertCell(3);
+	var rhCell = rowAdd.insertCell(4);
+	
+	idCell.innerHTML = i-1;
+	// create new elements 
+	wsCell.innerHTML = rowAbove[1].innerHTML;
+	wdCell.innerHTML = rowAbove[2].innerHTML;
+	tpCell.innerHTML = rowAbove[3].innerHTML;
+	rhCell.innerHTML = rowAbove[4].innerHTML;
+	
+	// Set new element values
+	wsCell.children[0].value = wsValue
+	wdCell.children[0].value = wdValue
+	tpCell.children[0].value = tpValue
+	rhCell.children[0].value = rhValue
+
+}
+
+
+function show_hide_figures(show=false){
+	// hides the figures until a new set are generated by the generator function
+	var im_1 = document.getElementById('image_emulated');
+	var im_2 = document.getElementById('image_winds')
+	var im_3 = document.getElementById('image_temp');
+	var im_4 = document.getElementById('image_contours');
+	
+	// show or hide figures
+	if (show==false){
+		im_1.style.visibility = 'hidden';
+		im_2.style.visibility = 'hidden';
+		im_3.style.visibility = 'hidden';
+		im_4.style.visibility = 'hidden';
+		} else {
+		im_1.style.visibility = 'visible';
+		im_2.style.visibility = 'visible';
+		im_3.style.visibility = 'visible';
+		im_4.style.visibility = 'visible';
+	}
+}
+
+
+function generate_sample(){
+	// hide fighres while new ones are generated
+	show_hide_figures(show=false);
+	document.getElementById('set_weather').disabled = false; // enable ability to customize weahter
+		
+	if (document.getElementById('random_check').checked){
+		document.getElementById('findex').value = Math.floor(Math.random()*170)
+	}			
+	
+	$.ajax({
+	  	url: "/input_value_checks", //send url to root address
+	  	type: 'get', // get or read server info
+	  	contentType: 'application/json',
+	  	data: {
+	  	    //button_text: $(this).text(), // get text from the button element
+	  	    'sample_num': document.getElementById('findex').value,
+	  	    'start_int': document.getElementById('start_int').value,
+	  	    'finish_int': document.getElementById('finish_int').value,
+	  	},
+	  	success: function(response){ //on success take the server response as an argument
+	  	    // update text with response 
+	  	    //$('.btn').text(response.seconds),
+	  	    document.getElementById('findex').value = response.sample_num,
+	  	    sample_num = response.sample_num,
+	  	    document.getElementById('start_int').value = response.start_int,
+	  	    start_int = response.start_int,
+	  	    document.getElementById('finish_int').value = response.finish_int,
+	  	    finish_int = response.finish_int
+	  	    
+	  	    // set sample field to sample_num
+	  	    document.getElementById('findex').value = sample_num;
+	  	    
+	  	    
+	  	    // convert table into array if using custom weather
+
+		    ws = 'None';
+		    wd = 'None';
+		    tp = 'None';
+		    rh = 'None';
+		    
+		    r = 0;
+	  	    if (document.getElementById("set_weather").checked == true){
+	  	    
+	  	    	    r = 1;
+		  	    weather_table = document.getElementById('weather_table_input');
+		  	    num_intervals = weather_table.rows.length - 1;
+		  	    
+		  	    //num_intervals = document.getElementById("pm_value").value;
+		  	    
+		  	    // initialize empty arrays for weather values
+		  	    ws = [];
+		  	    wd = [];
+		  	    tp = [];
+		  	    rh = [];
+		  	    
+		  	    // loop over rows in the table
+		  	    for (let j=0; j < num_intervals; j++){
+		  	    
+		  	    	// populate arrays of weather values 
+		  	    	ws.push(weather_table.rows[j+1].cells[1].children[0].value);
+		  	    	wd.push(weather_table.rows[j+1].cells[2].children[0].value);
+		  	    	tp.push(weather_table.rows[j+1].cells[3].children[0].value);
+		  	    	rh.push(weather_table.rows[j+1].cells[4].children[0].value);
+		  	    
+		  	    }    
+	  	    }
+	  	    
+	  	    
+	  	    // on completing input_value_checks, call run_model
+		    $.ajax({
+			url: "/run_model",
+			type: 'get',
+			contentType: 'application/json',
+			data: {
+			    //checkbox: document.getElementById("random_check").checked,
+		  	    'sample_num': sample_num,
+		  	    'start_int': start_int,
+		  	    'finish_int': finish_int,
+		  	    'r' : r, 
+		  	    'ws' : ws.toString(),
+		  	    'wd' : wd.toString(),
+		  	    'tp' : tp.toString(),
+		  	    'rh' : rh.toString()
+		  	},
+		  	success: function(response){
+		  	//update trial index
+		  	//document.getElementById('findex').value = response.sample_num,
+	  	        //sample_num = response.sample_num,	
+		  	
+		  	//update images
+		  	emulated_plot = JSON.parse(response.emulated_plot);
+		  	update_images(emulated_plot); // call update function
+
+		  	// show images
+		  	show_hide_figures(show=true);
+		  	  
+		  	  
+		  	// update table using default weather values  
+		  	if (document.getElementById("set_weather").checked == false){  
+		  	  	
+			  	//update weather table
+				weather_json = JSON.parse(response.weather);
+
+			  	// Update weather table using default values
+			  	document.getElementById('weather_table_output').innerHTML = "<th>Interval</th>"
+		     	        + "<th>Wind Speed (m/s)</th>"
+				+ "<th>Wind Dir. (deg N)</th>"
+				+ "<th>Temp (deg C)</th>"
+				+ "<th>R Humidity (%)</th>"
+			  	
+			  	
+		  		$.each(weather_json, function(i, item) {
+			    		$('<tr>').html(
+						"<td>" + i
+						+ "</td><td>" + weather_json[i].WS.toFixed(1)
+						+ "</td><td>" + weather_json[i].WD.toFixed(0)
+			       		+ "</td><td>" + weather_json[i].TEMP.toFixed(1)
+			       		+ "</td><td>" + weather_json[i].RH.toFixed(1)
+						+ "</td>").appendTo('#weather_table_output');
+					});
+		  	} //  end of conditional table update
+		  	
+
+		  	//console.log(weather_json.length())
+		  	
+		  	// Update Input Table of Weather values for thi srun
+		  	// only updates if using non-custom values
+		  	//$("#weather_table tbody tr").remove() // erase non-headers
+		  	if (document.getElementById('set_weather').checked == false) {
+		  	document.getElementById('weather_table_input').innerHTML = "<th>Interval</th>"
+	     	        + "<th>Wind Speed (m/s)</th>"
+		        + "<th>Wind Dir. (deg N)</th>"
+		        + "<th>Temp (deg C)</th>"
+		        + "<th>R Humidity (%)</th>"
+		  	
+	  		$.each(weather_json, function(i, item) {
+		    		$('<tr>').html(
+					"<td>" + i
+					+ "</td><td>" + "<input type='number' value=" + weather_json[i].WS.toFixed(1) + ">"
+					+ "</td><td>" + "<input type='number' value=" + weather_json[i].WD.toFixed(0) + ">"
+					+ "</td><td>" + "<input type='number' value=" + weather_json[i].TEMP.toFixed(1) + ">"
+					+ "</td><td>" + "<input type='number' value=" + weather_json[i].RH.toFixed(1) + ">"
+					+ "</td>").appendTo('#weather_table_input');
+				});
+			
+			
+						  	// set the number of intervals used
+			document.getElementById('pm_value').value = finish_int - start_int;
+			pmi = finish_int - start_int;
+			
+		  	} // end of set_weather check
+		  	
+
+		  	}   
+		})
+		
+		}
+	})//end ajax script
+	
+}
 
 
 $(document).ready(function(){
+	// reset fields to default values on page load/refresh
 	//default values
 	document.getElementById('findex').value = sample_num
 	document.getElementById('start_int').value = start_int
 	document.getElementById('finish_int').value = finish_int
 	
-	// table update test
-	//$('<tr>').html("<th>Hour</th>"
-	//	     	        + "<th>Wind Speed (m/s)</th>"
-	//		        + "<th>Wind Dir. (deg N)</th>"
-	//		        + "<th>Temp (deg C)</th>"
-	//		        + "<th>R Humidity</th>").appendTo('#weather_table');
+	document.getElementById('pm_value').value = pmi
+	document.getElementById('random_check').checked = false
+	document.getElementById('set_weather').checked = false
+	document.getElementById('set_weather').disabled = true
+	
+	var input_table = document.getElementById('weather_table_input')
+	
+	input_table.rows[1].cells[1].children[0].value = ws_default
+	input_table.rows[1].cells[2].children[0].value = wd_default
+	input_table.rows[1].cells[3].children[0].value = tp_default
+	input_table.rows[1].cells[4].children[0].value = rh_default
+	input_table.rows[2].cells[1].children[0].value = ws_default
+	input_table.rows[2].cells[2].children[0].value = wd_default
+	input_table.rows[2].cells[3].children[0].value = tp_default
+	input_table.rows[2].cells[4].children[0].value = rh_default
+	
+	// do not display pre-calculated figures
+	show_hide_figures(show=false);
 	
 	// GENERATE A NEW SET OF DATA
-	$('.btn').click(function(){
-		$.ajax({
-		  	url: "/input_value_checks", //send url to root address
-		  	type: 'get', // get or read server info
-		  	contentType: 'application/json',
-		  	data: {
-		  	    //button_text: $(this).text(), // get text from the button element
-		  	    sample_num: document.getElementById('findex').value,
-		  	    start_int: document.getElementById('start_int').value,
-		  	    finish_int: document.getElementById('finish_int').value
-		  	},
-		  	success: function(response){ //on success take the server response as an argument
-		  	    // update text with response 
-		  	    //$('.btn').text(response.seconds),
-		  	    document.getElementById('findex').value = response.sample_num,
-		  	    sample_num = response.sample_num,
-		  	    document.getElementById('start_int').value = response.start_int,
-		  	    start_int = response.start_int,
-		  	    document.getElementById('finish_int').value = response.finish_int,
-		  	    finish_int = response.finish_int
-		  	    // on completing input_value_checks, call run_model
-		  	    
-    			    $.ajax({
-				url: "/run_model",
-				type: 'get',
-				contentType: 'application/json',
-				data: {
-				    checkbox: document.getElementById("random_check").checked,
-			  	    sample_num: sample_num,
-			  	    start_int: start_int,
-			  	    finish_int: finish_int
-			  	},
-			  	success: function(response){
-			  	//update trial index
-			  	document.getElementById('findex').value = response.sample_num,
-		  	        sample_num = response.sample_num,
-			  	
-			  	//update weather table
-				weather_json = JSON.parse(response.weather),
 	
-
-			  	// Update Table of Weather values for thi srun
-			  	//$("#weather_table tbody tr").remove() // erase non-headers
-			  	document.getElementById('weather_table').innerHTML = "<th>Interval</th>"
-		     	        + "<th>Wind Speed (m/s)</th>"
-			        + "<th>Wind Dir. (deg N)</th>"
-			        + "<th>Temp (deg C)</th>"
-			        + "<th>R Humidity</th>"
-			  	
-		  		$.each(weather_json, function(i, item) {
-			    		$('<tr>').html(
-						"<td>" + i
-						+ "</td><td>" + weather_json[i].WS
-						+ "</td><td>" + weather_json[i].WD
-			       		+ "</td><td>" + weather_json[i].TEMP
-			       		+ "</td><td>" + weather_json[i].RH
-						+ "</td>").appendTo('#weather_table');
-					});
-			  	
-			  	
-			  	}   
-			})
-			// update images asynchronously below?
-			
-			}
-		})
-  })
+  //})
 })
 
 
@@ -140,54 +408,106 @@ $(document).ready(function(){
 </script>
 
 
+
+
+
 <body>
 
 
-
 <h1>Fire Emulation</h1>
-<p id="abstract">Fire emulation etc etc ...</p>
+<p id="abstract">This is a small demonstrator of a neural net fire emulator.</p>
+                <p id ='instructions'> 
+                The emulator is trained on a set of simulated fire ignitions. Choose a fire index to select
+                which fire site is used. The default duration of 0-22 intervals represents a 11.5 hour burn. 
+                A starting index N > 0 means the emultor will take over the estimation N (30 minute) intervals 
+                after ignition. Once a fire prediction is made the weather variables can be tuned by selecting 
+                the custom weather box and changing values in the table.      
+                </p>
+                <p>
+                Some intersting indices (25, 46, 92). For some indices such as (1, 19, 97) the emulator fails to 
+                propagate the fire, while some indices such as (24, 31, 104) have erroneous ignition sources 
+                predicted by the emulator which then propagate. These are interesting modes of failure, which may 
+                be overcome by the use of more sophisticated training regimes.
+                </p>
+                <p>
+                Note: Blue target contours will not be changed by using custom weather. These contours are 
+                generated by the (simulated) training data. Only the emulator is invoked in this demo.
+                </p>
 
 <label for="findex"> Fire Index (0-169): </label>
-<input type="number" id="findex" name="findex">
+<input type="number" id="findex" name="findex" maxlength='3' size='3'>
 
-<!--
-<p id="text" style="display:none">Checkbox is CHECKED!</p>
--->
-
-<input type='checkbox' id="random_check" name="random_check" onclick="rand_cond_check()">
-<label for "random_check"> Random input </label><br><br>
+<input type='checkbox' checked=false id="random_check" name="random_check" onclick="rand_cond_check"(new_num=false)>
+<label for "random_check"> Randomize Fire Location </label><br><br>
 
 <label for="start_int"> Starting Interval (0-21): </label>
-<input type="number" id="start_int" name="start_int"><br><br>
+<input type="number" id="start_int" name="start_int" maxlength='2' size='3'>
+
+<input type='checkbox' checked=false id="set_weather" name="set_weather" onclick="set_weather_timeseries()" disabled=true>
+<label for "set_weather"> Custom Weather </label><br><br>
 
 <label for="finish_int"> Finishing Interval (1-22): </label>
-<input type="number" id="finish_int" name="finish_int"><br><br>
+<input type="number" id="finish_int" name="finish_int" maxlength='2' size='3'><br><br>
+
+<div class='container'>
+				<!--
+		<button class='btn btn-default' id='generate' onclick="predict_fire()">
+		
+		<button class='btn btn-default' id='generate' onclick="change_title()">
+		-->
+		<button class='btn btn-default' id='generate' onclick="generate_sample()">
+		Predict Fire
+		</button>
+</div>
 
 
-<table id="weather_table" border=1>
+<!-- <p id="text"> Input weather table. <br> -->
+<br>Intervals:
+<button id='minus' hidden=true onclick="click_plus(-1)">-</button>
+<input type='text' id='pm_value' hidden=true value=1 disabled=true maxlength='2' size='2'>
+<button id='plus' hidden=true onclick="click_plus(1)">+</button>
+</p>
+
+<p id="text"> Weather table</p>
+
+<table id="weather_table_input" border=1 hidden=true>
       <tr>
         <th>Interval</th>
         <th>Wind Speed (m/s)</th>
         <th>Wind Dir. (deg N)</th>
         <th>Temp (deg C)</th>
-        <th>R Humidity</th>
+        <th>R Humidity (%)</th>
+      </tr>
+      <tr>
+        <td>0</td> 
+        <td><input type="number" value=0></td>
+        <td><input type="number" value=0></td>
+        <td><input type="number" value=0></td>
+        <td><input type="number" value=0></td>
+      </tr>
+        <td>1</td> 
+        <td><input type="number" value=20></td>
+        <td><input type="number" value=0></td>
+        <td><input type="number" value=30></td>
+        <td><input type="number" value=25></td>
+      </tr>
+</table>
+
+<table id="weather_table_output" border=1>
+      <tr>
+        <th>Interval</th>
+        <th>Wind Speed (m/s)</th>
+        <th>Wind Dir. (deg N)</th>
+        <th>Temp (deg C)</th>
+        <th>R Humidity (%)</th>
       </tr>
 </table>
 
 
-
-<div class='container'>
-		<button class='btn btn-default' id='generate'>
-		Predict Fire
-		</button>
-</div>
-
-<p id="text"> output weather table</p>
-
-
-<img id='image_emulated' src="static/images/emulated.jpg" alt="Fire Chloropleth">
-<img id='image_winds' src="static/images/winds.jpg" alt="Winds">
-<img id='image_temp' src="static/images/temperature.jpg" alt="Temp and RH">
+<img id='image_emulated' src="static/images/emulated.jpg" alt="Fire Chloropleth" visibility='hidden'>
+<img id='image_contours' src="static/images/land_classes.jpg" alt="Fire Contours" visibility='hidden'>
+<img id='image_winds' src="static/images/winds.jpg" alt="Winds" visibility='hidden'>
+<img id='image_temp' src="static/images/temperature.jpg" alt="Temp and RH" visibility='hidden'>
 
 </body>
 </html>
